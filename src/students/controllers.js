@@ -1,6 +1,7 @@
 const pool = require('../../db');
 const queries = require('./queries');
 
+
 const getStudents = (req, res) => {
        pool.query(queries.getStudents, (error, results)=>{
               if (error) throw error;
@@ -9,11 +10,22 @@ const getStudents = (req, res) => {
 };
 
 const getStudentById = (req, res)=> {
-       const id = parseInt(req.params.id); //get the id parameter from the uri and store it in const id, it will be used to query the database.
+       const id = parseInt(req.params.id, 10); //get the id parameter from the uri and store it in const id, it will be used to query the database.
+       if (isNaN(id)) {
+              return res.status(400).json({ error: 'Invalid'});
+       }
+
        pool.query(queries.getStudentById, [id], (error, results)=>{
-              if(error) throw error;
-              res.status(200).json(results.rows);
-       })
+              if(error) {
+                     return res.status(500).json({error: 'Database error'});
+              }
+
+              if(results.rows.length === 0) {
+                     return res.status(404).json({ error: 'Student not found'});
+              }
+
+              res.status(200).json(results.rows[0]);
+       });
 };
 
 const addStudent = (req, res)=>{
@@ -50,8 +62,12 @@ const removeStudent = (req, res)=>{
 };
 
 const updateStudent= (req, res)=>{
-       const id = parseInt(req.params.id);
+       const id = parseInt(req.params.id, 10);
        const {name} = req.body;
+
+       if(isNaN(id)){
+              return res.status(400).json({error: 'Invalid ID'});
+       }
 
        pool.query(queries.getStudentById, [id], (error, results)=>{
               const noStudentFound = !results.rows.length;
